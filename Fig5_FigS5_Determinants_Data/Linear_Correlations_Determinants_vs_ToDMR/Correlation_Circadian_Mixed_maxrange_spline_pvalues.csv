@@ -1,0 +1,8 @@
+,Cisplatin_maxrange_spline,Adavosertib_maxrange_spline,Paclitaxel_maxrange_spline,Alpelisib_maxrange_spline,5FU_maxrange_spline,Torin2_maxrange_spline,Alisertib_maxrange_spline,Doxorubicin_maxrange_spline
+Mixed_ridgelength_median,0.0493,0.3173,0.3999,0.5264,0.8581,0.7402,0.5372,0.1233
+Mixed_circadian_mean,0.0528,0.6169,0.0287,0.4422,0.0538,0.2793,0.8267,0.4408
+Mixed_autocorr_peak,0.0229,0.3265,0.0248,0.9727,0.1863,0.5454,0.9261,0.2911
+Mixed_noise_mean,0.2397,0.6355,0.8565,0.0677,0.2076,0.7368,0.3455,0.5815
+Mixed_amplitude_median_5d,0.4156,0.3706,0.2495,0.1782,0.6597,0.4672,0.6672,0.2067
+Mixed_period_median_2d,0.8812,0.5502,0.416,0.9619,0.8933,0.939,0.0759,0.6075
+Mixed_autocorr_period,0.6848,0.5652,0.5913,0.8016,0.8731,0.9903,0.037,0.3408
