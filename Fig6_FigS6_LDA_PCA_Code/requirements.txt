@@ -1,0 +1,8 @@
+pandas==1.5.2
+openpyxl==3.0.10
+matplotlib==3.5.1
+scikit-learn==1.1.1
+numpy==1.23.5
+seaborn==0.11.2
+scipy==1.7.3
+adjustText==0.8
