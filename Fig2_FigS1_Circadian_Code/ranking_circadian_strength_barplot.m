@@ -1,4 +1,4 @@
-function ranking_circadian_strength_barplot(file,cellline)
+function ranking_circadian_strength_barplot_v2(file,cellline)
 
 %Carolin Ector, 23.08.2023
 %%Function ranks cell lines based on their normalized circadian strength values
@@ -10,14 +10,16 @@ function ranking_circadian_strength_barplot(file,cellline)
 % celllines: names of the cell lines being analysed
 
 %load data
-[num] = xlsread(file,'normalized');
+% [num] = xlsread(file,'normalized')
+% [num] = xlsread(file,'normalized_bmal1');
+[num] = xlsread(file,'normalized_per2');
 
 font = 'Helvetica Neue';
 
 meandatanorm = mean(num,1,'omitnan');
 stddatanorm = std(num,[],1,'omitnan');
 
-[meansorted, sortIdx] = sort(meandatanorm,'ascend');
+[meansorted, sortIdx] = sort(meandatanorm,'descend');
 datasorted = num(:,sortIdx);
 stdsorted = stddatanorm(:,sortIdx);
 celllinesorted = cellline(:,sortIdx);
