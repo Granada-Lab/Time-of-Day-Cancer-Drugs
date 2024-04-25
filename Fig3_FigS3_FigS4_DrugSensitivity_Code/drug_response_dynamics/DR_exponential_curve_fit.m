@@ -1,4 +1,4 @@
-function DR_exponential_curve_fit(a,c,date,channel,cellline,drug,doses,nr,dosetextexcel,imaginginterval,yNorm_all,yStd_all,ymin_all,ymax_all)
+function DR_exponential_curve_fit(a,c,date,channel,cellline,drug,doses,nr,dosetextexcel,imaginginterval,yNorm_all,yStd_all,ymin_all,ymax_all,destination)
 
 %Carolin Ector, 27.09.2023
 
@@ -23,8 +23,6 @@ function DR_exponential_curve_fit(a,c,date,channel,cellline,drug,doses,nr,dosete
 % Define remaining variables
 experiment = str2num(date);
 yaxisnames = {'Cell Number';'Confluency'};
-dd = numel(drug);
-ee = (numel(doses{1})+1); %loop doses, +1 = control
 
 %% Fit in loop
 % Set up fittype and options.
@@ -35,7 +33,15 @@ opts.Robust = 'on';
 opts.StartPoint = [1 0.5]; % [a k]
 opts.Upper = [1.1 0.1]; % [a k]
 
-for d = 1:dd
+if experiment == 20240402 && c == 5
+    dd = 3;
+else
+    dd = numel(drug); %loop drugs
+end
+
+for d = d1:d1
+
+    ee = (numel(doses{d})+1); %loop doses, +1 = control
     fig = figure;%('Visible','off');
 
     if experiment == 2021
@@ -114,19 +120,19 @@ for d = 1:dd
     title(han,titletext,'FontSize',11);
 
     %save figure
-    filetext = append('DR_plots/',date,'_DR_',cellline{c},'_',drug{d},'_',channel{a},'_Fig4_ExpFit_combined.svg');
+    filetext = append(destination,date,'_DR_plots/',date,'_DR_',cellline{c},'_',drug{d},'_',channel{a},'_Fig4_ExpFit_combined.svg');
     saveas(fig, filetext);
 
 end %loop d drugs
 
 %create excel file where values of the exponential fit will be stored
-outputfile=append('DR_results/',date,'_DR_Parameters_',cellline{c},'.xlsx');
+outputfile=append(destination,date,'_DR_results/',date,'_DR_Parameters_',cellline{c},'.xlsx');
 valuestosave = {k_all,CIlow_all,CIup_all,Rsq_all};
 outputsheets = {'exp_k';'exp_CIlow';'exp_CIup';'exp_Rsq'};
 
 for i = 1:numel(valuestosave)
-    output = cell2table(valuestosave{i},"VariableNames",drug);
-    rownames = cell2table(dosetextexcel);
+    output = cell2table(valuestosave{i},"VariableNames",drug(1:dd));
+    rownames = cell2table(dosetextexcel');
     outputtable = [rownames,output];
     outputsheet = append(outputsheets{i},'_',channel{a});
     writetable(outputtable,outputfile,'sheet',outputsheet);

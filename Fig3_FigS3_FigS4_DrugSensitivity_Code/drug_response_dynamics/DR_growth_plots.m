@@ -1,4 +1,4 @@
-function DR_growth_plots(a,c,d,date,channel,cellline,drug,doses,colorarray,imaginginterval,meanx,ydata_smooth,stdev_smooth,ydata_normx0,stdev_normx0,ydata_normctrl,stdev_normctrl)
+function DR_growth_plots(a,c,d,date,channel,cellline,drug,doses,colorarray,imaginginterval,meanx,ydata_smooth,stdev_smooth,ydata_normx0,stdev_normx0,ydata_normctrl,stdev_normctrl,destination)
 
 %Carolin Ector, 11.09.2023
 
@@ -27,12 +27,12 @@ function DR_growth_plots(a,c,d,date,channel,cellline,drug,doses,colorarray,imagi
 % Define remaining variables
 yaxisnames = {'Cell Number';'Confluency'};
 font = {'Helvetica Neue'};
-ee = (numel(doses{1})+1); %loop doses, +1 = control
+ee = (numel(doses{d})+1); %loop doses, +1 = control
 black = [0,0,0]; %control color
 color  = [black;colorarray];
 
 %% Figure 1: Smoothed growth curves as a function of time
-figure('Visible','off');
+figure%('Visible','off');
 
 time1 = transpose(meanx);
 
@@ -90,11 +90,11 @@ legendtitle=append(drug{d},' (µM)');
 title(lgd,legendtitle,'FontWeight','normal','FontName',string(font),'FontSize',16);
 
 %save figure1
-filetext1 = append('DR_plots/',date,'_DR_',cellline{c},'_',drug{d},'_',channel{a},'_Fig1_RawData.svg');
+filetext1 = append(destination,date,'_DR_plots/',date,'_DR_',cellline{c},'_',drug{d},'_',channel{a},'_Fig1_RawData.svg');
 saveas(h1, filetext1);
 
 %% Figure 2: Growth curves normalized to time = 0 (time of treatment)
-figure('Visible','off');
+figure%('Visible','off');
 
 time2 = (0:imaginginterval:96);
 
@@ -137,11 +137,11 @@ set(lgd,'FontSize',15,'Orientation','vertical','Location','northwest','FontWeigh
 title(lgd,legendtitle,'FontWeight','normal','FontName',string(font),'FontSize',16);
 
 %save figure 2
-filetext2 = append('DR_plots/',date,'_DR_',cellline{c},'_',drug{d},'_',channel{a},'_Fig2_Normx0.svg');
+filetext2 = append(destination,date,'_DR_plots/',date,'_DR_',cellline{c},'_',drug{d},'_',channel{a},'_Fig2_Normx0.svg');
 saveas(h2, filetext2)
 
 %% Figure 3: Relative normalized growth to the control
-figure('Visible','off');
+figure%('Visible','off');
 
 for l = 2:ee
 
@@ -180,7 +180,7 @@ set(lgd,'FontSize',15,'Orientation','vertical','Location','southwest','FontWeigh
 title(lgd,legendtitle,'FontWeight','normal','FontName',string(font),'FontSize',16);
 
 %save figure 3
-filetext3 = append('DR_plots/',date,'_DR_',cellline{c},'_',drug{d},'_',channel{a},'_Fig3_RelCTRL.svg');
+filetext3 = append(destination,date,'_DR_plots/',date,'_DR_',cellline{c},'_',drug{d},'_',channel{a},'_Fig3_RelCTRL.svg');
 saveas(h3, filetext3)
 
 end %function

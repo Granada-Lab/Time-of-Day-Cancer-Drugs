@@ -1,4 +1,4 @@
-function [parameters] = DR_EC50_extraction(a,c,date,cellline,drug,doses,finalresponse,sd_finalresponse,parameters)
+function [parameters] = DR_EC50_extraction(a,c,d1,date,cellline,drug,doses,finalresponse,sd_finalresponse,parameters,destination)
 
 %Carolin Ector, 28.09.2023
 %Adapted from Ritchie Smith (2023). doseResponse (https://www.mathworks.com/matlabcentral/fileexchange/33604-doseresponse),MATLAB Central File Exchange.
@@ -30,7 +30,13 @@ channel = {'CellNr';'Conf'};
 yaxisnames = {'Cell Number';'Confluency'};
 experiment = str2num(date);
 
-for d = 1:dd %loop d drug
+if experiment == 20240402 && c == 5
+    dd = 3;
+else
+    dd = numel(drug); %loop drugs
+end
+
+for d = d1:dd %loop d drug
 
     Doserange = doses{d};
 
@@ -131,8 +137,8 @@ for d = 1:dd %loop d drug
     xticklabels(string(xaxislabels));
 
     %save figure
-%     filetext = append('DR_plots/',date,'_DR_',cellline{c},'_',drug{d},'_',channel{a},'_Fig6_EC50_combined.svg');
-%     saveas(fig, filetext);
+    filetext = append(destination,date,'_DR_plots/',date,'_DR_',cellline{c},'_',drug{d},'_',channel{a},'_Fig6_EC50_combined.svg');
+    saveas(fig, filetext);
 
     vars = {'Doserange';'Response';'Error';'excl_Dose';'excl_Resp';'excl_Error';'excluded_indices'};
     clear(vars{:});

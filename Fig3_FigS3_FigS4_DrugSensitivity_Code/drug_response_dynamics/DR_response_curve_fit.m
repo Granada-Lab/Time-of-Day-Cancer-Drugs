@@ -1,4 +1,4 @@
-function [parameters, dose_GRinf] = DR_response_curve_fit(a,c,date,experiment,cellline,drug,doses)
+function [parameters, dose_GRinf] = DR_response_curve_fit(a,c,d1,date,experiment,cellline,drug,doses,destination)
 
 %Carolin Ector, 28.09.2023
 %Adapted from the publication from Hafner, M. et al.  Growth rate inhibition metrics correct for confounders in measuring sensitivity to cancer drugs. 
@@ -31,14 +31,12 @@ function [parameters, dose_GRinf] = DR_response_curve_fit(a,c,date,experiment,ce
 % dose_GRinf: closest and smallest dose eliciting a GRinf response with corresponding index in Doserange array
 
 %Define remaining variables
-dd = numel(drug);
-ee = numel(doses{1})+1; %+1 = control
 channel = {'CellNr';'Conf'};
 yaxisnames = {'Cell Number';'Confluency'};
 measurement = append('(',yaxisnames{a},')');
 
 %Load data
-inputfile = append('DR_results/',date,'_DR_Parameters_',cellline{c},'.xlsx');
+inputfile = append(destination,date,'_DR_results/',date,'_DR_Parameters_',cellline{c},'.xlsx');
 
 %exponential growth rate (k)
 sheet1 = append('exp_k_',channel{a});
@@ -52,8 +50,15 @@ sheet2 = append('exp_CIlow_',channel{a});
 sheet3 = append('exp_CIup_',channel{a});
 [t_CIup] = readtable(inputfile,'sheet',sheet3);
 
-for d = 1:dd %loop d drug
+if experiment == 20240402 && c == 5
+    dd = 3;
+else
+    dd = numel(drug); %loop drugs
+end
 
+for d = d1:dd %loop d drug
+
+    ee = numel(doses{d})+1; %+1 = control
     Doserange = doses{d};
 
     if experiment == 2021
@@ -103,7 +108,7 @@ for d = 1:dd %loop d drug
 
     %Exclude highest dose and corresponding response for Doxorubicin
     %(Doxorubicin-induced red signal enhancement due to drug autofluorescence)
-    if strcmp(drug{d}, 'Doxorubicin')
+    if strcmp(drug{d}, 'Doxorubicin') && experiment ~= 20240402
         GR(end,:) = [];
         Doserange(end,:) = [];
         error1(end,:) = [];
@@ -174,18 +179,22 @@ for d = 1:dd %loop d drug
     xlabel('Dose (µM)','FontSize',18,'FontName','Helvetica Neue');
     ylabeltext = append('GR ',measurement);
     ylabel(ylabeltext,'FontSize',18,'FontName','Helvetica Neue');
+%     ylim([-0.8 1.0]);
 
     ax = gca;
 
     set(ax,'XScale','log','XLimitMethod', 'padded','YLimitMethod', 'padded','linewidth',1.5,'YGrid','on', ...
         'XGrid','off','Box','on','Color','none','FontSize',18);
 
+%     set(ax,'XScale','log','XLimitMethod', 'padded','linewidth',1.5,'YGrid','on', ...
+%         'XGrid','off','Box','on','Color','none','FontSize',18);
+
     xticks(xaxislabels);
     xticklabels(string(xaxislabels));
 
     %save figure
-    filetext = append('DR_plots/',date,'_DR_',cellline{c},'_',drug{d},'_',channel{a},'_Fig5_RC_combined.svg');
-%     saveas(fig, filetext);
+    filetext = append(destination,date,'_DR_plots/',date,'_DR_',cellline{c},'_',drug{d},'_',channel{a},'_Fig5_RC_combined.svg');
+    saveas(fig, filetext);
 
     %Find closest and minimum dose eliciting a GRinf response
     GRinf = parameters(3,d);
