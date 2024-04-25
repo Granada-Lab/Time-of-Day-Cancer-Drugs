@@ -1,4 +1,4 @@
-function boxplot_circadian_values
+function boxplot_circadian_values_v2
 
 %Carolin Ector, 22.08.2023
 
@@ -11,14 +11,17 @@ celllines = {'MCF10A';'MCF7';'HCC1806';'MDAMB468';'GIMEN';'SY5Y';'U2OS';'U2OS sK
 
 for m = 1:3 %loop m metric
 
+    celllines2 = celllines;
+%     celllines2 = celllines(1:7,:); %per2-only
+    
     fig = figure;
     fig.Position = [420,285,525,425];
 
     %load data
     if m < 3
-        path = 'autocorrelation_results.xlsx';
+        path = '/Users/carolinector/Nextcloud/Manuscripts/ToDMethods/code_and_data_to_submit_v2/Data/Fig2_FigS1_Circadian_Data/autocorrelation_results.xlsx';
     elseif m == 3
-        path = 'cwt_ridgelengths_threshold_halfmax.xlsx';
+        path = '/Users/carolinector/Nextcloud/Manuscripts/ToDMethods/code_and_data_to_submit_v2/Data/Fig2_FigS1_Circadian_Data/cwt_ridgelengths_threshold_halfmax.xlsx';
     end
     sheet_bmal = append('Bmal1_',metric{m});
     sheet_per = append('Per2_',metric{m});
@@ -32,19 +35,21 @@ for m = 1:3 %loop m metric
 
     %merge Bmal1 and Per2 data for all cell lines
     data = [bmal;per];
+%     data = [bmal]; %bmal-only
+%     data = [per]; %per-only
 
     if m == 1 %exclude SY5Y and U2OS Cry1/2-dKO from ranking due to periods above the circadian range
         data(:,9) = [];
         data(:,6) = [];
-        celllines(9) = [];
-        celllines(6) = [];
+        celllines2(9) = [];
+        celllines2(6) = [];
     end
 
     %sort cell lines by their median lag or peak value (ascending)
     med = median(data,'omitnan');
     [~, sortIdx] = sort(med,'descend');
     dataAscend = data(:,sortIdx);
-    celllinesAscend = celllines(sortIdx,:);
+    celllinesAscend = celllines2(sortIdx,:);
 
     %plot boxplot
     boxplot(dataAscend,'Labels',celllinesAscend); hold on
@@ -57,8 +62,10 @@ for m = 1:3 %loop m metric
 
     if m == 1
         ylabeltext = 'Lag 2^{nd} peak (h)';
-    else
+    elseif m == 2
         ylabeltext = 'Autocorrelation 2^{nd} peak';
+    elseif m == 3
+        ylabeltext = 'Ridge length (hours)';
     end
 
     ylabel(ylabeltext)

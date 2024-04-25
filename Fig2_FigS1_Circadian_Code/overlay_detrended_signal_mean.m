@@ -1,4 +1,4 @@
-function overlay_detrended_signal_mean(file,celllines,col_bmal,col_per)
+function overlay_detrended_signal_mean(file,celllines,col_bmal,col_per,rep_bmal,rep_per)
 
 %Carolin Ector, 23.08.2023
 
@@ -19,45 +19,50 @@ time = num(:,1);
 
 for c = 1:cc %loop c celllines
 
-    %load data for bmal1 and per2 reporter
-    rep = 3; %take the first 3 replicates to overlay signals from a single experiment
-
-    if c ~= 8 || c ~= 9  %KO celllines have no data of the Per2 reporter
-        ii = 2;
-    else
+    if c == 8 || c == 9  %KO celllines have no data of the Per2 reporter
         ii = 1;
+    else
+        ii = 2;
     end
 
     for i = 1:ii %loop i reporter
 
+        if i == 1
+            rep = rep_bmal; 
+        else
+            rep = rep_per;
+        end
+
         for r = 1:rep
             a = 0:(rep-1);
             if i == 1
-                Bmal1(:,r) = num(:,col_bmal(c)+a(r));
+                Bmal1(r,:) = num(:,col_bmal(c)+a(r));
             else
-                Per2(:,r) = num(:,col_per(c)+a(r));
+                Per2(r,:) = num(:,col_per(c)+a(r));
             end
         end
     end
 
     %% process and plot data
 
-    Bmal1_mean = (mean(Bmal1,2));
-    Bmal1_std = (std(Bmal1,[],2));
-    if c ~= 8 || c ~= 9 
-        Per2_mean = (mean(Per2,2));
-        Per2_std = (std(Per2,[],2));
+    Bmal1_mean = mean(Bmal1,1);
+    Bmal1_std = std(Bmal1,[],1);
+    if c == 8 || c == 9 
+    else
+        Per2_mean = mean(Per2,1);
+        Per2_std = std(Per2,[],1);
     end
 
     x = transpose(time);
-    y1 = transpose(Bmal1_mean);
-    e1 = transpose(Bmal1_std);
+    y1 = Bmal1_mean;
+    e1 = Bmal1_std;
 
     color1 =  [0.9804,0.6392,0.0510]; %yellow for Bmal1
 
-    if c ~= 8 || c ~= 9 
-        y2 = transpose(Per2_mean);
-        e2 = transpose(Per2_std);
+    if c == 8 || c == 9 
+    else
+        y2 = Per2_mean;
+        e2 = Per2_std;
         color2 = [0.0627,0.4510,0.6824]; %blue for Per2
     end
 
@@ -66,13 +71,13 @@ for c = 1:cc %loop c celllines
     hold all;
 
     if c == 8 || c == 9 
-        patch([x fliplr(x)], [(y1-e1)  (fliplr(y1+e1))], color1, 'FaceAlpha',0.1, 'EdgeAlpha',0, 'HandleVisibility','off');
+        patch([x fliplr(x)], [(y1-e1)  (fliplr(y1+e1))], color1, 'FaceAlpha',0.2, 'EdgeAlpha',0, 'HandleVisibility','off');
         plot(x,y1,'LineWidth',2.5,'LineStyle','-','Color',color1);
         ylabel('Detrended Bmal1-Luc signal');
         lgd = legend(reporter{1});
     else
         yyaxis left
-        patch([x fliplr(x)], [(y1-e1)  (fliplr(y1+e1))], color1, 'FaceAlpha',0.1, 'EdgeAlpha',0, 'HandleVisibility','off');
+        patch([x fliplr(x)], [(y1-e1)  (fliplr(y1+e1))], color1, 'FaceAlpha',0.2, 'EdgeAlpha',0, 'HandleVisibility','off');
         plot(x,y1,'LineWidth',2.5,'LineStyle','-','Color',color1);
         ylabel('Detrended Bmal1-Luc signal');
         leftAxisLim = max(abs([y1-e1, y1+e1]));
@@ -80,7 +85,7 @@ for c = 1:cc %loop c celllines
         leftAxis = gca;
         leftAxis.YColor = color1;
         yyaxis right
-        patch([x fliplr(x)], [(y2-e2)  (fliplr(y2+e2))],color2, 'FaceAlpha',0.1, 'EdgeAlpha',0, 'HandleVisibility','off');
+        patch([x fliplr(x)], [(y2-e2)  (fliplr(y2+e2))],color2, 'FaceAlpha',0.2, 'EdgeAlpha',0, 'HandleVisibility','off');
         plot(x,y2,'LineWidth',2.5,'LineStyle','-','Color',color2);
         ylabel('Detrended Per2-Luc signal');
         lgd = legend(reporter);
@@ -115,7 +120,8 @@ for c = 1:cc %loop c celllines
     clear Bmal1
     clear lgd
 
-    if c ~= 8 || c ~= 9 
+    if c == 8 || c == 9 
+    else
         clear Per2
     end
 
