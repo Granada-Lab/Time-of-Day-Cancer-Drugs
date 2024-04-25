@@ -1,6 +1,8 @@
-function exponential_fit_doublingtimes_growthcurves(file,cellline)
+function exponential_fit_doublingtimes_growthcurves_v2
 
 %Carolin Ector, 25.08.2023
+%adapted on 04.04.2024 to add analyis of new dataset to the pipeline (for
+%predictions)
 
 %Function ...:
 % 1. normalizes growth curves of different cell lines
@@ -8,32 +10,39 @@ function exponential_fit_doublingtimes_growthcurves(file,cellline)
 % 3. calculates doubling times
 % 4. saves calculated values in an separate excel sheet
 
-%Time-of-Day-Cancer-Drugs Manuscript: Fig 3e + calculation of data for  Fig. 3f
+%Time-of-Day-Cancer-Drugs Manuscript: Fig 3e + calculation of data for Fig. 3f
+%Time-of-Day-Cancer-Drugs Manuscript: calculation of data for Fig 5c
 
-%input: stored in "growth_analysis_workspace.mat"
-% file: excel file where growth data is stored
-% cellline: names of the cell lines with growth data
 
 %% Define variables
-cc = numel(cellline);
 channel = {'CellNr';'Conf'};
 yaxisnames = {'Cell Number';'Confluency (%)'};
 legendtext = {'Cell Number_{t0} = ';'Confluence_{t0} = '};
 
+% Load excel file where data is stored
+% inputfile = 'growth_raw_data'; %original data - Fig. 3 and S2
+% ouputfile = 'growth_data';
+% i = 1;
+inputfile = 'growth_raw_data_for_predictions'; %predictions - Fig. S5c
+output = 'growth_data_predictions';
+i=2;
+
 for a = 1:2 %loop a channel
 
     %create excel file where data will be stored
-    outputfile = append('Growth_analysis_results.xlsx');
+    outputfile = append('results_',output,'_',channel{a},'.xlsx');
     yaxisname = append('Normalized ',yaxisnames{a});
 
     %load data
     sheet1 = append('Data_',channel{a}); %raw growth data
     sheet2 = append('Error_',channel{a}); %std error (across multiple images per cell line)
-    [data] = xlsread(file,sheet1);
-    [error] = xlsread(file,sheet2);
+    [data,cellline] = xlsread(inputfile,sheet1);
+    [error] = xlsread(inputfile,sheet2);
 
     fig1 = figure;
     fig1.Position = [1,1,2560,1361];
+
+    cc = numel(cellline);
 
     %create empty arrays to store results of the exponential fit
     fitresult = cell(cc,1);
@@ -41,11 +50,15 @@ for a = 1:2 %loop a channel
 
     for c = 1:cc %loop c cell lines
 
-        %account for different imaging intervals
-        if ismember(c, [1, 6, 9])
+        %define imaging intervals
+        if i == 1 %original data - Fig. 3 and S2
+            if ismember(c, [1, 7, 8, 11, 12])
+                time = (0:1.5:96)';
+            else
+                time = (0:2:96)';
+            end
+        elseif i == 2 %predictions - Fig. S5c
             time = (0:1.5:96)';
-        else
-            time = (0:2:96)';
         end
 
         %take data from the first 4 days to make different experiments with different recording lengths comparable
@@ -154,8 +167,8 @@ for a = 1:2 %loop a channel
     hold off
 
     %save figure
-%     filetext = append(fitfunc,'_selected_celllines_manuscript_',metric{a},'_v2');
-%     saveas(fig1, [ filetext, '.svg']);
+    filetext = append('fits_',output,'_',channel{a});
+    saveas(fig1, [ filetext, '.svg']);
 
     %save values
     varnames = cellline; %column name
