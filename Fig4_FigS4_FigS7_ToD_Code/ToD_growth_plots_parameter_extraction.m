@@ -1,11 +1,12 @@
-function ToD_growth_plots_parameter_extraction(date,cellline,drug,timepoints,treat1,treat2,finaltimepoint,intervals,v,color)
+function ToD_growth_plots_parameter_extraction(date,cellline,drug,timepoints,treat1,treat2,finaltimepoint,intervals,v,color,description)
 
 %Carolin Ector, 23.08.2023
+%adapted 20.03.2024 to implement the U2OS-KO experiment
 
 %%Function reads and normalizes time-series growth data from Time-of-Day treatment experiments stored in excel sheets
 %%Generation of growth plots and Time-of-Day (ToD) response curves
 
-%Time-of-Day-Cancer-Drugs Manuscript Fig.4b,c
+%Time-of-Day-Cancer-Drugs Manuscript Nature Communications Revision #1
 
 %input: stored in '[date]_ToD_workspace.mat'
 % date: date of the experiment being analyzed
@@ -28,7 +29,18 @@ ii = numel(timepoints);
 %% Load and normalize data
 experiment = str2double(date);
 
-for a = 1:2 %loop a channel
+if experiment == 20210802
+    ydata_normtoTP0 = nan(9,1);
+    ydata_normtoTP0_std = nan(9,1);
+    ctrlvaluesnormtoTP0 = nan(9,1);
+    ctrlvaluesnormtoTP0_std = nan(9,1);
+end
+
+for a = 1:2 %loop a channel ***
+
+    % Define folders to store results in
+    foldername = strcat(date,'_ToD_',description);
+    destination = append('ToD_plots/',channel{a},'/',foldername,'/');
 
     for c = 1:cc %loop c cell lines
 
@@ -45,6 +57,14 @@ for a = 1:2 %loop a channel
             num1 = num1(1:length_array2,:);
         elseif length_array1 < length_array2
             num2 = num2(1:length_array1,:);
+        end
+
+        if experiment == 20240311 %U2OS-KO experiment
+            if c == 4
+                dd = 2; %U2OS Cry2-sKO only tested with 5-FU and Cisplatin
+            else
+                dd = 4;
+            end
         end
 
         for d = 1:dd %loop d drug
@@ -67,6 +87,25 @@ for a = 1:2 %loop a channel
                     control_col = (3:8:43);
                     control_colorder = [control_col(3),control_col(2),control_col(1),control_col(6),control_col(5),control_col(4)];
                 end
+            elseif experiment == 20240311 %U2OS-KO experiment
+                sortidx = [3,2,1,6,5,4];
+                if c == 4 %U2OS Cry2-sKO
+                    v = [4,5]; %initial column for drug-treated conditions
+                    maxcol = 20; %end column in excel with response data
+                else %U2OS WT, Cry1-sKO and Cry1/2-dKO, SY5Y
+                    v = [4,6,5,7]; %initial column for drug-treated conditions
+                    maxcol = 32; %end column in excel with response data
+                end
+                treat_col = (v(d):dd+1:maxcol);
+                control_col = (3:dd+1:maxcol);
+                treat_colorder =  treat_col(:,sortidx); %sort
+                control_colorder = control_col(:,sortidx);
+            elseif experiment == 202305231 || experiment == 202305232 || experiment == 202305101 || experiment == 202305102
+                sortidx = [3,2,1,6,5,4];
+                treat_col = (v(d):1:v(d)+5);
+                control_col = (3:1:8);
+                treat_colorder =  treat_col(:,sortidx); %sort
+                control_colorder = control_col(:,sortidx);
             elseif experiment == 20220209
                 treat_colorder = [v(d),v(d)-8,v(d)-16,v(d)+8,v(d)+16,v(d)+24];
                 control_colorder = [19,11,3,27,35,43];
@@ -83,6 +122,9 @@ for a = 1:2 %loop a channel
                     num1 = num1(1:104,:);
                     num2 = num2(1:104,:);
                 end
+            elseif experiment == 20210802
+                treat_colorder = (4:1:11);
+                control_colorder = [3,3,3,3,3,3,3,3]; %no controls for each timepoint, just one for all
             end
 
             for i = 1:ii %loop i timepoints
@@ -91,8 +133,18 @@ for a = 1:2 %loop a channel
 
                     if r == 1
                         num = num1;
+                        numctrl = num1;
                     elseif r == 2
                         num = num2;
+                        numctrl = num2;
+                    end
+
+                    if experiment == 20240311 %U2OS-KO experiment
+                        if d == 2
+                            numctrl = num2; %NaCl on plate 2
+                        else
+                            numctrl = num1; %DMSO on plate 1
+                        end
                     end
 
                     %load x-values (=time)
@@ -100,7 +152,7 @@ for a = 1:2 %loop a channel
 
                     %load y-data timepoints
                     yval_raw(:,r)=rmmissing(num(:,treat_colorder(i)));
-                    ctrl_raw(:,r)=rmmissing(num(:,control_colorder(i)));
+                    ctrl_raw(:,r)=rmmissing(numctrl(:,control_colorder(i)));
 
                     %smooth y-data
                     yval_smooth(:,r) = smoothdata(yval_raw(:,r));
@@ -180,7 +232,7 @@ for a = 1:2 %loop a channel
                 response_finalTP_std(i,d) = std(yval_finalTP(i,:),[],2);
 
                 if experiment == 20221107 && d == 8
-                    ctrl_raw(:,i) = ctrl_smooth(:,1);
+                    ctrldata_raw(:,i) = ctrl_smooth(:,1);
                     ctrl_raw_std(:,i) = (0);
                     ctrl_normx0(:,i) = ctrlval_normx0(:,1);
                     ctrl_normx0_std(:,i) = (0);
@@ -189,7 +241,7 @@ for a = 1:2 %loop a channel
                     ctrl_normtoTP0(i,d) = ctrlvaluesnormtoTP0(i,1);
                     ctrl_normtoTP0_std(i,d) = (0);
                 elseif experiment == 20221107 && d == 9
-                    ctrl_raw(:,i) = ctrl_smooth(:,2);
+                    ctrldata_raw(:,i) = ctrl_smooth(:,2);
                     ctrl_raw_std(:,i) = (0);
                     ctrl_normx0(:,i) = ctrlval_normx0(:,2);
                     ctrl_normx0_std(:,i) = (0);
@@ -198,7 +250,7 @@ for a = 1:2 %loop a channel
                     ctrl_normtoTP0(i,d) = ctrlvaluesnormtoTP0(i,2);
                     ctrl_normtoTP0_std(i,d) = (0);
                 else
-                    ctrl_raw(:,i) = mean(ctrl_smooth, 2);
+                    ctrldata_raw(:,i) = mean(ctrl_smooth, 2);
                     ctrl_raw_std(:,i) = std(ctrl_smooth,[],2);
                     ctrl_normx0(:,i) = mean(ctrlval_normx0, 2);
                     ctrl_normx0_std(:,i) = std(ctrlval_normx0,[],2);
@@ -218,6 +270,26 @@ for a = 1:2 %loop a channel
 
             end %loop i timepoints
 
+            %identify response at timepoint 0
+            if experiment == 20210802
+                for r2 = 1:2
+                    splinefit1 = fit(timepoints,yval_finalTP(:,r2),'smoothingspline','SmoothingParam',0.7);
+                    responseAtTime0(d,r2) = feval(splinefit1, 0);
+                    splinefit2 = fit(timepoints,ctrlval_finalTP(:,r2),'smoothingspline','SmoothingParam',0.7);
+                    responseAtTime02(d,r2) = feval(splinefit2, 0);
+                    clear splinefit1
+                    clear splinefit2
+                end
+                for i2= 1:ii
+                    for r3 = 1:2
+                        yvaluesnormtoTP0(i2+1,r3) = yval_finalTP(i2,r3)./responseAtTime0(d,r3);
+                        ctrlvaluesnormtoTP0(i2+1,r3) = ctrlval_finalTP(i2,r3)./responseAtTime02(d,r3);
+                    end
+                end
+                yvaluesnormtoTP0(1,:) = 1;
+                ctrlvaluesnormtoTP0(1,:) = 1;
+            end
+
             for s = 1:2
                 meaninh(s,d) = mean(inhibition(:,s),1);
                 stdinh(s,d) = std(inhibition(:,s),[],1);
@@ -226,32 +298,44 @@ for a = 1:2 %loop a channel
             ydata_finalTP(:,d) = mean(yval_finalTP,2);
             ydata_finalTP_std(:,d) = std(yval_finalTP,[],2);
 
+%             if experiment == 20210802
             ydata_normtoTP0(:,d) = mean(yvaluesnormtoTP0,2); %figure5+6
             ydata_normtoTP0_std(:,d) = std(yvaluesnormtoTP0,[],2);
+%             end
 
             meanx = mean(xdata, 2);
+
+            if experiment == 20210802
+                x_RC = [0;timepoints];
+            else
+                x_RC = timepoints;
+            end
 
             finalvalues(1,d) = max(ydata_normtoTP0(:,d)) - min(ydata_normtoTP0(:,d));  %maximal range of final responses
             finalvalues(2,d) = mean(ydata_normtoTP0(:,d),1); %mean of final responses
             finalvalues(3,d) = std(ydata_normtoTP0(:,d),[],1); %stdev of final responses
             finalvalues(4,d) = finalvalues(3,d)/finalvalues(2,d); %coefficient of variation of final responses
-            aucresp(:,d) = trapz(timepoints, ydata_normtoTP0(:,d)); %AUC finalresponse
+            aucresp(:,d) = trapz(x_RC, ydata_normtoTP0(:,d)); %AUC finalresponse
             finalvalues(5,d) = aucresp(:,d)/24; %AUC/24
 
             if experiment == 20221107 && d == 9 %NaCl control for Cisplatin
                 plus = 3;
             elseif experiment == 20221107 && d == 8 %DMSO control for Adavosertib
                 plus = 2;
+            elseif experiment == 20240311 && d == 2 %NaCl control for Cisplatin
+                plus = 2;
             else
                 plus = 1; %DMSO control for all other drugs
             end
 
-            finalvalues(1,dd+plus) = max(ctrl_normtoTP0(:,d)) - min(ctrl_normtoTP0(:,d));
-            finalvalues(2,dd+plus) = mean(ctrl_normtoTP0(:,d),1);
-            finalvalues(3,dd+plus) = std(ctrl_normtoTP0(:,d),[],1);
-            finalvalues(4,dd+plus) = finalvalues(3,dd+plus)/finalvalues(2,dd+plus);
-            ctrl_aucresp(:,d) = trapz(timepoints, ctrl_normtoTP0(:,d));
-            finalvalues(5,dd+plus) = ctrl_aucresp(:,d)/24;
+            if experiment ~= 20210802
+                finalvalues(1,dd+plus) = max(ctrl_normtoTP0(:,d)) - min(ctrl_normtoTP0(:,d));
+                finalvalues(2,dd+plus) = mean(ctrl_normtoTP0(:,d),1);
+                finalvalues(3,dd+plus) = std(ctrl_normtoTP0(:,d),[],1);
+                finalvalues(4,dd+plus) = finalvalues(3,dd+plus)/finalvalues(2,dd+plus);
+                ctrl_aucresp(:,d) = trapz(timepoints, ctrl_normtoTP0(:,d));
+                finalvalues(5,dd+plus) = ctrl_aucresp(:,d)/24;
+            end
 
             valuestoclear2 = {'xdata';'yval_raw';'yval_smooth';'yval_normx0';'ctrl_smooth';'ctrlval_normx0';
                 'yval_norm_ToT';'ctrl_norm_ToT';'yval_normctrl';'yval_finalTP';'ctrlval_finalTP';
@@ -267,7 +351,7 @@ for a = 1:2 %loop a channel
                 x = transpose(meanx);
                 y1 = transpose(ydata_raw(:,j));
                 error1 = transpose(ydata_raw_std(:,j));
-                ctrl1 = transpose(ctrl_raw(:,j));
+                ctrl1 = transpose(ctrldata_raw(:,j));
                 ctrlerror1 = transpose(ctrl_raw_std(:,j));
 
                 fig1 = patch([x fliplr(x)], [(y1-error1)  (fliplr(y1+error1))], color{j}, ...
@@ -322,8 +406,8 @@ for a = 1:2 %loop a channel
             title(lgd,'Time of Day (h)','FontWeight','normal','FontName','Helvetica Neue','FontSize',16);
 
             %save figure1
-            filename1 = append('ToD_plots/',channel{a},'/',date,'_ToD_',cellline{c},'_',drug{d},'_',channel{a},'_fig1_RawData.svg');
-            %             saveas(fig1,filename1);
+            filename1 = append(destination,date,'_ToD_',cellline{c},'_',drug{d},'_',channel{a},'_fig1_RawData.svg');
+            saveas(fig1,filename1);
 
             %% Figure 2: Data normalized to x=0
             figure('Visible','off');
@@ -376,8 +460,8 @@ for a = 1:2 %loop a channel
             hold off
 
             %save figure 2
-            filename2 = append('ToD_plots/',channel{a},'/',date,'_ToD_',cellline{c},'_',drug{d},'_',channel{a},'_fig2_','Normx0.svg');
-            %             saveas(fig2, filename2);
+            filename2 = append(destination,date,'_ToD_',cellline{c},'_',drug{d},'_',channel{a},'_fig2_','Normx0.svg');
+            saveas(fig2, filename2);
 
             %% Figure 3: Data normalized to time of treatment
 
@@ -424,8 +508,8 @@ for a = 1:2 %loop a channel
             title(lgd,'Time of Day (h)','FontWeight','normal','FontName','Helvetica Neue','FontSize',16);
 
             %save figure 3
-            filename3 = append('ToD_plots/',channel{a},'/',date,'_ToD_',cellline{c},'_',drug{d},'_',channel{a},'_fig9_','NormToT_noctrl.svg');
-            %             saveas(fig3, filename3);
+            filename3 = append(destination,date,'_ToD_',cellline{c},'_',drug{d},'_',channel{a},'_fig9_','NormToT_noctrl.svg');
+            saveas(fig3, filename3);
 
             %% Figure 4: Relative growth to respective control
             figure('Visible','off');
@@ -466,8 +550,8 @@ for a = 1:2 %loop a channel
             hold off
 
             %save figure4
-            filename4 = append('ToD_plots/',channel{a},'/',date,'_ToD_',cellline{c},'_',drug{d},'_',channel{a},'_fig4_NormCtrl.svg');
-            %             saveas(fig4, filename4);
+            filename4 = append(destination,date,'_ToD_',cellline{c},'_',drug{d},'_',channel{a},'_fig4_NormCtrl.svg');
+            saveas(fig4, filename4);
 
             %% Figure 5: ToD-Response Curves
 
@@ -479,9 +563,11 @@ for a = 1:2 %loop a channel
                 rrcc = 1;
             end
 
-            for rc = 1:rrcc
+            if experiment == 20210802
+                rrcc = 1;
+            end
 
-                x_RC = timepoints;
+            for rc = 1:rrcc
 
                 if rc == 1 %treated
                     y5 = ydata_normtoTP0(:,d);
@@ -496,6 +582,9 @@ for a = 1:2 %loop a channel
                     fignr = 'fig5';
                     if d == 1
                         drugname = 'DMSO';
+                        if experiment == 20211027 || experiment == 20211001
+                            drugname = 'NaCl';
+                        end
                     elseif d == 8
                         drugname = 'DMSO-Ada';
                     elseif d == 9
@@ -526,7 +615,7 @@ for a = 1:2 %loop a channel
                 ax = gca;
                 grid on;
                 xlim([-1 25]);
-                if experiment == 20211001 || experiment == 20211027
+                if experiment == 20211001 || experiment == 20211027 || experiment == 20210802
                     xticks(0:3:24);
                     xticklabels({'0','3','6','9','12','15','18','21','24'});
                 else
@@ -538,24 +627,14 @@ for a = 1:2 %loop a channel
                 set(ax,axOpt{:});
 
                 %save figure5
-                filename5 = append('ToD_plots/',channel{a},'/',date,'_ToD_',cellline{c},'_',drugname,'_',channel{a},'_',fignr,'_RC_4d',method,'.svg');
-                %                 saveas(fig5, filename5);
+                filename5 = append(destination,date,'_ToD_',cellline{c},'_',drugname,'_',channel{a},'_',fignr,'_RC_4d',method,'.svg');
+                saveas(fig5, filename5);
 
             end
 
             %% Figure 6: ToD-Response Curve, spline smoothed + normalized to ToD-0
 
-            if d == 1
-                rrcc = 2;
-            elseif experiment == 20221107 && d > 7
-                rrcc = 2;
-            else
-                rrcc = 1;
-            end
-
             for rc = 1:rrcc
-
-                x_RC = timepoints;
 
                 if rc == 1
                     y6 = ydata_normtoTP0(:,d);
@@ -569,6 +648,9 @@ for a = 1:2 %loop a channel
                     fignr = 'fig6';
                     if d == 1
                         drugname = 'DMSO';
+                        if experiment == 20211027 || experiment == 20211001
+                            drugname = 'NaCl';
+                        end
                     elseif d == 8
                         drugname = 'DMSO-Ada';
                     elseif d == 9
@@ -581,15 +663,31 @@ for a = 1:2 %loop a channel
 
                 figure('Visible','off');
 
-                splinefit = fit(timepoints,y6,'smoothingspline','SmoothingParam',0.7);
+                splinefit = fit(x_RC,y6,'smoothingspline','SmoothingParam',0.7);
 
                 fig6 = errorbar(x_RC,y6,error6,'o','MarkerSize',12,'MarkerFaceColor','k','LineWidth',2,'Color','k'); hold all
 
                 % Evaluate spline fit within the range of timepoints
-                xRange = linspace(min(timepoints), max(timepoints), 1000); % Adjust the number of points as desired
+                xRange = linspace(min(x_RC), max(x_RC), 1000); % Adjust the number of points as desired
                 yfitinterpolate = feval(splinefit, xRange);
                 h1 = plot(xRange, yfitinterpolate);
                 hold off
+
+                %save ToDMR value from spline smooth
+                if rc == 1
+                    finalvalues(6,d) = max(yfitinterpolate)-min(yfitinterpolate); %save ToDMR value from spline smooth
+                elseif rc == 2
+                    if experiment == 20221107 && d == 9 %NaCl control for Cisplatin
+                        plus = 3;
+                    elseif experiment == 20221107 && d == 8 %DMSO control for Adavosertib
+                        plus = 2;
+                    elseif experiment == 20240311 && d == 2 %NaCl control for Cisplatin
+                        plus = 2;
+                    else
+                        plus = 1; %DMSO control for all other drugs
+                    end
+                    finalvalues(6,dd+plus) = max(yfitinterpolate)-min(yfitinterpolate);
+                end
 
                 set(h1,'LineWidth',2.5,'color','k','HandleVisibility','off');
 
@@ -601,7 +699,7 @@ for a = 1:2 %loop a channel
                 ax = gca;
                 grid on;
                 xlim([-1 25]);
-                if experiment == 20211001 || experiment == 20211027
+                if experiment == 20211001 || experiment == 20211027 || experiment == 20210802
                     xticks(0:3:24);
                     xticklabels({'0','3','6','9','12','15','18','21','24'});
                 else
@@ -613,24 +711,16 @@ for a = 1:2 %loop a channel
                 set(ax,axOpt{:});
 
                 %save figure6
-                filename6 = append('ToD_plots/',channel{a},'/',date,'_ToD_',cellline{c},'_',drugname,'_',channel{a},'_',fignr,'_RC_4d_',method,'.svg');
-                %                 saveas(fig6, filename6);
+                filename6 = append(destination,date,'_ToD_',cellline{c},'_',drugname,'_',channel{a},'_',fignr,'_RC_4d_',method,'.svg');
+                saveas(fig6, filename6);
+
+                clear yfitinterpolate
 
             end
 
             %% Figure 7: ToD-Response Curve, spline smoothed + unnormalized to ToD-0
 
-            if d == 1
-                rrcc = 2;
-            elseif experiment == 20221107 && d > 7
-                rrcc = 2;
-            else
-                rrcc = 1;
-            end
-
             for rc = 1:rrcc
-
-                x_RC = timepoints;
 
                 if rc == 1
                     y7 = response_finalTP(:,d);
@@ -656,12 +746,17 @@ for a = 1:2 %loop a channel
 
                 figure('Visible','off');
 
-                splinefit = fit(timepoints,y7,'smoothingspline','SmoothingParam',0.7);
+                if experiment == 20210802
+                    y7 = [mean(responseAtTime0(d,:),2);y7];
+                    error7 = [std(responseAtTime0(d,:),[],2);error7];
+                end
+
+                splinefit = fit(x_RC,y7,'smoothingspline','SmoothingParam',0.7);
 
                 fig7 = errorbar(x_RC,y7,error7,'o','MarkerSize',12,'MarkerFaceColor','k','LineWidth',2,'Color','k'); hold all
 
                 % Evaluate spline fit within the range of timepoints
-                xRange = linspace(min(timepoints), max(timepoints), 1000); % Adjust the number of points as desired
+                xRange = linspace(min(x_RC), max(x_RC), 1000); % Adjust the number of points as desired
                 yfitinterpolate = feval(splinefit, xRange);
                 h1 = plot(xRange, yfitinterpolate);
                 hold off
@@ -676,7 +771,7 @@ for a = 1:2 %loop a channel
                 ax = gca;
                 grid on;
                 xlim([-1 25]);
-                if experiment == 20211001 || experiment == 20211027
+                if experiment == 20211001 || experiment == 20211027 || experiment == 20210802
                     xticks(0:3:24);
                     xticklabels({'0','3','6','9','12','15','18','21','24'});
                 else
@@ -687,36 +782,47 @@ for a = 1:2 %loop a channel
                 %yticks(0:0.5:2); ylim([0 2]);
                 set(ax,axOpt{:});
 
+                clear yfitinterpolate
+
                 %save figure7
-                filename7 = append('ToD_plots/',channel{a},'/',date,'_ToD_',cellline{c},'_',drugname,'_',channel{a},'_',fignr,'_RC_4d_',method,'.svg');
-                %                 saveas(fig7, filename6);
+                filename7 = append(destination,date,'_ToD_',cellline{c},'_',drugname,'_',channel{a},'_',fignr,'_RC_4d_',method,'.svg');
+                saveas(fig7, filename7);
 
             end
+
+            clear 'ctrl_raw'
+            clear 'ctrl_raw_std'
+
         end %Loop d drug
 
         outputsheets = {'finalvaluesmean';'responses';'stdresponses'};
-        valuename = {'maxmimum range';'mean';'stdev';'coeffvar';'AUC/24'};
+        valuename = {'maxmimum range';'mean';'stdev';'coeffvar';'AUC/24';'ToD_MR'};
 
-        if experiment ~= 20221107
-            ydata_normtoTP0(:,end+1) = ctrl_normtoTP0(:,1);
-            ydata_normtoTP0_std (:,end+1) = ctrl_normtoTP0_std(:,1);
-        else
+        if experiment == 20221107
             gg = [1,8,9]; %add responses of 'DMSO','DMSO-Ada','NaCl' to array
             for g = 1:3
                 ydata_normtoTP0(:,dd+g) = ctrl_normtoTP0(:,gg(:,g));
                 ydata_normtoTP0_std(:,dd+g) = ctrl_normtoTP0_std(:,gg(:,g));
             end
+        elseif experiment == 20240311
+            for g = 1:2 %add responses of 'DMSO' and 'NaCl' to array
+                ydata_normtoTP0(:,dd+g) = ctrl_normtoTP0(:,g);
+                ydata_normtoTP0_std(:,dd+g) = ctrl_normtoTP0_std(:,g);
+            end
+        elseif experiment ~= 20210802
+            ydata_normtoTP0(:,end+1) = ctrl_normtoTP0(:,1);
+            ydata_normtoTP0_std (:,end+1) = ctrl_normtoTP0_std(:,1);
         end
 
         input = {finalvalues;ydata_normtoTP0;ydata_normtoTP0_std};
-        outputfile = append(date,'_ToD_Results_4d_',cellline{c},'.xlsx');
+        outputfile = append('ToD_results/',date,'_ToD_Results_4d_',cellline{c},'.xlsx');
 
         for s = 1:numel(input)
 
             if s == 1
                 t_firstcol = cell2table(valuename);
             else
-                t_firstcol = array2table(timepoints);
+                t_firstcol = array2table(x_RC);
             end
 
             finalvaluestosave = input{s};
@@ -729,6 +835,14 @@ for a = 1:2 %loop a channel
                 varname = [(append(drug));'DMSO';'DMSO-Ada';'NaCl'];
             elseif experiment == 20211027 || experiment == 20211001
                 varname = [(append(drug));'NaCl'];
+            elseif experiment == 20240311
+                if c == 4
+                    varname = [(append(drug(1:2,:)));'DMSO';'NaCl'];
+                else
+                    varname = [(append(drug));'DMSO';'NaCl'];
+                end
+            elseif experiment == 20210802
+                varname = append(drug);
             else
                 varname = [(append(drug));'DMSO'];
             end
@@ -740,11 +854,12 @@ for a = 1:2 %loop a channel
 
             clear t_firstcol
             clear finalvaluestosave
+            clear varname
             clear table
 
         end
 
-        valuestoclear3 = {'meanx';'ydata_raw';'ydata_raw_std';'ctrl_raw';'ctrl_raw_std';'ydata_normx0';'ydata_normx0_std';
+        valuestoclear3 = {'meanx';'ydata_raw';'ydata_raw_std';'ydata_normx0';'ydata_normx0_std';'ctrldata_raw';'ctrldata_raw_std'
             'ctrl_normx0';'ctrl_normx0_std';'y_normctrl';'y_normctrl_std';'ydata_normtoTP0';'ydata_normtoTP0_std';'ctrl_normtoTP0';'ctrl_normtoTP0_std';
             'finalvalues'};
         clear(valuestoclear3{:});
