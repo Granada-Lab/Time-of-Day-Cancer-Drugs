@@ -3,7 +3,7 @@
 Carolin Ector - 10.10.2023
 
 Notes regarding all subfolders:
-* Input data files and output result files are stored in Figshare
+* Input data files and output result files are stored in Figshare: https://figshare.com/projects/Time-of-Day-Drug-Response/180916
 * MATLAB code was generated using the version 2021b
 
 Notes regarding Fig3_FigS3_FigS4_Growth_DrugSensitivity
